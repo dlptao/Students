@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thêm Học Sinh</title>
+</head>
+<body>
+    <h1>Thêm Học Sinh</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Thêm</button>
+    </form>
+    <a href="{% url 'student_list' %}">Quay lại danh sách học sinh</a>
+</body>
+</html>
