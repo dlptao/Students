@@ -9,12 +9,12 @@ CORS(app)
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'  # Thay 'root' bằng user của bạn
 app.config['MYSQL_PASSWORD'] = '12345'  # Thay bằng mật khẩu MySQL của bạn
-app.config['MYSQL_DB'] = 'student_db'
+app.config['MYSQL_DB'] = 'studentdb'
 
 mysql = MySQL(app)
 
 # API lấy danh sách học sinh
-@app.route('/students', methods=['GET'])
+@app.route('/students', methods=['GET'], strict_slashes=False)
 def get_students():
     cur = mysql.connection.cursor()
     cur.execute("SELECT * FROM students")
@@ -25,7 +25,7 @@ def get_students():
     return jsonify(student_list)
 
 # API thêm học sinh mới
-@app.route('/students', methods=['POST'])
+@app.route('/students', methods=['POST'], strict_slashes=False)
 def add_student():
     data = request.get_json()
     cur = mysql.connection.cursor()
@@ -36,7 +36,7 @@ def add_student():
     return jsonify({"message": "Student added successfully"}), 201
 
 # API xóa học sinh
-@app.route('/students/<int:id>', methods=['DELETE'])
+@app.route('/students/<int:id>', methods=['DELETE'], strict_slashes=False)
 def delete_student(id):
     cur = mysql.connection.cursor()
     cur.execute("DELETE FROM students WHERE id = %s", (id,))
@@ -45,4 +45,7 @@ def delete_student(id):
     return jsonify({"message": "Student deleted successfully"})
 
 if __name__ == '__main__':
+    print(app.url_map)
     app.run(debug=True)
+
+

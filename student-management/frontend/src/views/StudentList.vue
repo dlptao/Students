@@ -45,12 +45,30 @@ export default {
 <template>
   <div>
     <h1>Danh sách học sinh</h1>
-    <ul>
-      <li v-for="student in students" :key="student.id">
-        {{ student.name }} - {{ student.age }} tuổi - {{ student.class_name }}
-        <button class="btn btn-primary" @click="deleteStudent(student.id)">Xóa</button>
-      </li>
-    </ul>
+    <div class="justify-content-center">
+    <table  class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Tên</th>
+          <th scope="col">Tuổi</th>
+          <th scope="col">Lớp</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in students" :key="item.id">
+          <td>{{ item.id }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.age }} tuổi</td>
+          <td>{{ item.class_name }}</td>
+          <td>
+            <button class="btn btn-primary" @click="deleteStudent(student.id)">Xóa</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
     <form @submit.prevent="addStudent">
       <div class="row justify-content-center">
         <div class="col-sm-3">
@@ -68,8 +86,10 @@ export default {
             <input v-model="newStudent.class_name" class="form-control" placeholder="Lớp" required />
           </div>
         </div>
+        <div class="col-sm-3">
+          <button class="btn btn-success" type="submit">Thêm học sinh</button>
+        </div>
       </div>
-      <button class="btn btn-success mt-4" type="submit">Thêm học sinh</button>
     </form>
   </div>
 </template>
