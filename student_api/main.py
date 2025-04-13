@@ -6,7 +6,7 @@ from fastapi.openapi.utils import get_openapi
 
 from users import user_router
 from students import student_router
-from classrooms import class_router
+from classrooms import classroom_router
 
 # Load biến môi trường từ file .env
 load_dotenv()
@@ -34,7 +34,7 @@ app.add_middleware(
 # Đăng ký các router
 app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(student_router, prefix="/students", tags=["Students"])
-app.include_router(class_router, prefix="/classrooms", tags=["Classrooms"])
+app.include_router(classroom_router, prefix="/classrooms", tags=["Classrooms"])
 
 # Route mặc định
 @app.get("/")
