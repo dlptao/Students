@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
-from typing import List
-import mysql.connector
+from typing import List, Optional
+import pymysql
 import os
 from jose import JWTError, jwt
 from dotenv import load_dotenv
@@ -38,11 +38,16 @@ class StudentOut(BaseModel):
     age: int
     classroom_id: int
 
+class PaginatedStudents(BaseModel):
+    items: List[StudentOut]
+    total: int
+    total_pages: int
+    current_page: int
+
 # Hàm lấy thông tin user từ JWT token
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(payload)
         username = payload.get("sub")
         role = payload.get("role")
         if not username or not role:
@@ -71,38 +76,84 @@ def create_student(student: StudentCreate, current_user: dict = Depends(get_curr
         return {"id": student_id, "message": "Tạo học sinh thành công"}
     except Exception as e:
         log_exception(e)
-        raise
+        raise HTTPException(status_code=500, detail="Lỗi khi tạo học sinh")
     finally:
         cursor.close()
         db.close()
 
-# Lấy danh sách học sinh
-@student_router.get("/", response_model=List[StudentOut])
-def get_students():
+# Lấy danh sách học sinh với tìm kiếm, lọc lớp và phân trang
+@student_router.get("/", response_model=PaginatedStudents)
+def get_students(
+    classroom_id: Optional[int] = Query(None, description="Lọc theo lớp"),
+    search: Optional[str] = Query(None, description="Tìm kiếm theo tên"),
+    page: int = Query(1, ge=1, description="Trang hiện tại"),
+    size: int = Query(10, ge=1, le=100, description="Số học sinh mỗi trang")
+):
     db = get_connection()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     try:
-        cursor.execute("SELECT * FROM students")
+        offset = (page - 1) * size
+        query = "SELECT * FROM students WHERE 1=1"
+        count_query = "SELECT COUNT(*) as total FROM students WHERE 1=1"
+        params = []
+        count_params = []
+
+        # Lọc theo lớp
+        if classroom_id:
+            query += " AND classroom_id = %s"
+            count_query += " AND classroom_id = %s"
+            params.append(classroom_id)
+            count_params.append(classroom_id)
+
+        # Tìm kiếm theo tên
+        if search:
+            query += " AND name LIKE %s"
+            count_query += " AND name LIKE %s"
+            like_pattern = f"%{search}%"
+            params.append(like_pattern)
+            count_params.append(like_pattern)
+
+        # Phân trang
+        query += " LIMIT %s OFFSET %s"
+        params.extend([size, offset])
+
+        # Lấy danh sách học sinh
+        cursor.execute(query, tuple(params))
         students = cursor.fetchall()
-        return students
+
+        # Lấy tổng số kết quả
+        cursor.execute(count_query, tuple(count_params))
+        total = cursor.fetchone()["total"]
+        total_pages = (total + size - 1) // size
+
+        return {
+            "items": students,
+            "total": total,
+            "total_pages": total_pages,
+            "current_page": page
+        }
+
+    except Exception as e:
+        log_exception(e)
+        raise HTTPException(status_code=500, detail="Lỗi khi lấy danh sách học sinh")
     finally:
-        print('1')
         cursor.close()
-        print('2')
         db.close()
-        print('3')
 
 # Lấy học sinh theo ID
 @student_router.get("/{student_id}", response_model=StudentOut)
 def get_student(student_id: int):
     db = get_connection()
-    cursor = db.cursor()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
     try:
         cursor.execute("SELECT * FROM students WHERE id = %s", (student_id,))
         student = cursor.fetchone()
         if not student:
             raise HTTPException(status_code=404, detail="Không tìm thấy học sinh")
         return student
+    except Exception as e:
+        log_exception(e)
+        raise HTTPException(status_code=500, detail="Lỗi khi lấy học sinh")
     finally:
         cursor.close()
         db.close()
@@ -122,6 +173,9 @@ def update_student(student_id: int, student: StudentUpdate, current_user: dict =
         )
         db.commit()
         return {"message": "Cập nhật thành công"}
+    except Exception as e:
+        log_exception(e)
+        raise HTTPException(status_code=500, detail="Lỗi khi cập nhật học sinh")
     finally:
         cursor.close()
         db.close()
@@ -138,6 +192,9 @@ def delete_student(student_id: int, current_user: dict = Depends(get_current_use
         cursor.execute("DELETE FROM students WHERE id = %s", (student_id,))
         db.commit()
         return {"message": "Xoá học sinh thành công"}
+    except Exception as e:
+        log_exception(e)
+        raise HTTPException(status_code=500, detail="Lỗi khi xoá học sinh")
     finally:
         cursor.close()
         db.close()
