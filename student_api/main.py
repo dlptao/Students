@@ -3,7 +3,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
+from sqlalchemy.orm import sessionmaker
 
+# Import các router
 from users import user_router
 from students import student_router
 from classrooms import classroom_router
@@ -14,6 +18,24 @@ load_dotenv()
 # Kiểm tra biến môi trường
 print("✅ DB_HOST:", os.getenv("DB_HOST"))
 print("✅ SECRET_KEY:", os.getenv("SECRET_KEY"))
+
+# Cấu hình kết nối cơ sở dữ liệu
+SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+
+# Tạo engine và session cho SQLAlchemy
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"charset": "utf8mb4"})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Khởi tạo base class cho ORM models
+Base: DeclarativeMeta = declarative_base()
+
+# Hàm khởi tạo session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Khởi tạo ứng dụng FastAPI
 app = FastAPI(
@@ -70,3 +92,6 @@ def custom_openapi():
 
 # Gán schema tùy chỉnh cho app
 app.openapi = custom_openapi
+
+# Tạo cơ sở dữ liệu nếu chưa có
+Base.metadata.create_all(bind=engine)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from passlib.hash import bcrypt
 from jose import jwt
@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 import pymysql.cursors  # ✅ Dùng DictCursor
 
-from database import get_connection
+from database import get_connection  # Sử dụng kết nối của bạn với PyMySQL
 
 # Load biến môi trường từ file .env
 load_dotenv()
@@ -36,7 +36,7 @@ def create_token(data: dict):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# API Đăng ký
+# Hàm đăng ký
 @user_router.post("/register")
 def register(user: UserRegister):
     conn = get_connection()
@@ -61,7 +61,7 @@ def register(user: UserRegister):
 @user_router.post("/login")
 def login(user: UserLogin):
     conn = get_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)  # Dùng DictCursor để trả về dict
     try:
         cursor.execute("SELECT * FROM users WHERE username = %s", (user.username,))
         result = cursor.fetchone()

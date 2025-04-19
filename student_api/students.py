@@ -90,7 +90,7 @@ def get_students(
     size: int = Query(10, ge=1, le=100, description="Số học sinh mỗi trang")
 ):
     db = get_connection()
-    cursor = db.cursor(pymysql.cursors.DictCursor)
+    cursor = db.cursor(pymysql.cursors.DictCursor)  # Sử dụng DictCursor để trả về kết quả dạng dict
     try:
         offset = (page - 1) * size
         query = "SELECT * FROM students WHERE 1=1"
@@ -144,7 +144,7 @@ def get_students(
 @student_router.get("/{student_id}", response_model=StudentOut)
 def get_student(student_id: int):
     db = get_connection()
-    cursor = db.cursor(pymysql.cursors.DictCursor)
+    cursor = db.cursor(pymysql.cursors.DictCursor)  # Dùng DictCursor để trả về dict
     try:
         cursor.execute("SELECT * FROM students WHERE id = %s", (student_id,))
         student = cursor.fetchone()
