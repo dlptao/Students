@@ -1,14 +1,9 @@
+# app/main.py
 from fastapi import FastAPI
-from app.routers import auth
+from app.api import auth, class_api, student
 
-app = FastAPI()
+app = FastAPI(title="Quản lý học sinh & lớp học")
 
-<<<<<<< HEAD
-@app.get("/")
-def root():
-    return {"message": "Student Management API with SQLAlchemy is running!"}
-
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-=======
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
->>>>>>> b63faba1984b7b66cebd04181b5af4a956cd5c3c
+app.include_router(auth.router)
+app.include_router(class_api.router)
+app.include_router(student.router)
