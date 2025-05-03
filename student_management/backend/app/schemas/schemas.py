@@ -1,6 +1,7 @@
 # app/schemas/schemas.py
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+from datetime import datetime
 
 class UserCreate(BaseModel):
     username: str
@@ -19,27 +20,50 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class ClassCreate(BaseModel):
+# Class schemas
+class ClassBase(BaseModel):
     name: str
     description: Optional[str] = None
 
-class ClassOut(BaseModel):
+class ClassCreate(ClassBase):
+    pass
+
+class ClassUpdate(ClassBase):
+    pass
+
+class ClassOut(ClassBase):
     id: int
-    name: str
-    description: Optional[str]
     teacher_id: int
+    created_at: datetime
 
     class Config:
         orm_mode = True
 
-class StudentCreate(BaseModel):
+class ClassWithStudents(ClassOut):
+    students: List['StudentOut']
+
+# Student schemas
+class StudentBase(BaseModel):
     name: str
     class_id: int
 
-class StudentOut(BaseModel):
+class StudentCreate(StudentBase):
+    pass
+
+class StudentUpdate(StudentBase):
+    pass
+
+class StudentOut(StudentBase):
     id: int
-    name: str
-    class_id: int
+    created_at: datetime
 
     class Config:
         orm_mode = True
+
+# Delete response schemas
+class DeleteResponse(BaseModel):
+    message: str
+    status: str = "success"
+
+# Update forward references
+ClassWithStudents.update_forward_refs()
