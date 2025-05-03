@@ -1,24 +1,14 @@
-# app/api/student.py
-from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
-from app.schemas.schemas import StudentCreate, StudentUpdate, StudentOut, DeleteResponse
-from app.models.models import User
+from fastapi import HTTPException, status
 from app.repositories.student_repository import (
     get_student, get_students, get_class_students,
     create_student, update_student, delete_student
 )
 from app.repositories.class_repository import get_class
-from app.dependencies.dependencies import get_db, get_current_user
+from app.schemas.schemas import StudentCreate, StudentUpdate
+from app.models.models import User
 
-router = APIRouter(prefix="/api/students", tags=["students"])
-
-@router.post("/", response_model=StudentOut)
-def create_new_student(
-    student_in: StudentCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def create_new_student(db: Session, student_in: StudentCreate, current_user: User):
     if current_user.role != "teacher":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -44,14 +34,7 @@ def create_new_student(
         class_id=student_in.class_id
     )
 
-@router.get("/", response_model=List[StudentOut])
-def read_students(
-    skip: int = 0,
-    limit: int = 100,
-    class_id: int = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def get_all_students(db: Session, current_user: User, class_id: int = None, skip: int = 0, limit: int = 100):
     if class_id:
         # Kiểm tra quyền truy cập lớp học
         db_class = get_class(db, class_id)
@@ -68,12 +51,7 @@ def read_students(
         return get_class_students(db, class_id, skip, limit)
     return get_students(db, skip, limit)
 
-@router.get("/{student_id}", response_model=StudentOut)
-def read_student(
-    student_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def get_student_by_id(db: Session, student_id: int, current_user: User):
     db_student = get_student(db, student_id)
     if db_student is None:
         raise HTTPException(
@@ -90,13 +68,7 @@ def read_student(
         )
     return db_student
 
-@router.put("/{student_id}", response_model=StudentOut)
-def update_student_info(
-    student_id: int,
-    student_in: StudentUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def update_student_info(db: Session, student_id: int, student_in: StudentUpdate, current_user: User):
     if current_user.role != "teacher":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -139,12 +111,7 @@ def update_student_info(
         class_id=student_in.class_id
     )
 
-@router.delete("/{student_id}", response_model=DeleteResponse)
-def delete_student_info(
-    student_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def delete_student_info(db: Session, student_id: int, current_user: User):
     if current_user.role != "teacher":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -166,5 +133,4 @@ def delete_student_info(
             detail="Không có quyền xóa học sinh này"
         )
     
-    delete_student(db, student_id)
-    return DeleteResponse(message="Đã xóa học sinh thành công")
+    delete_student(db, student_id) 
